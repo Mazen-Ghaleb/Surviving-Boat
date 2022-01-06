@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>three.js webgl - shaders - ocean</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <link type="text/css" rel="stylesheet" href="main.css" />
+  </head>
+  <body>
+    <div id="container"></div>
+    <div id="info"><a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - webgl ocean</div>
+
+    <script type="module">
+      import * as THREE from '../build/three.module.js';
+
+      import Stats from './jsm/libs/stats.module.js';
+
+      import { GUI } from './jsm/libs/lil-gui.module.min.js';
+      import { OrbitControls } from './jsm/controls/OrbitControls.js';
+      import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+      import { Water } from './jsm/objects/Water.js';
+      import { Sky } from './jsm/objects/Sky.js';
+
+      let container, stats;
+      let camera, scene, renderer;
+      let controls, water;
+      let ambient, directionalLight;
+      let cloud,
+        cloudsList = [];
+      let flash;
+      let rain,
+        rainGeo = [];
+
+      const rainCount = 10000;
+      const cloudCount = 500;
+      const SCALE = 10000;
+      const rainMaterial = new THREE.PointsMaterial({
+        color: 0xaaaaaa,
+        size: 0.1,
+        transparent: true,
+      });
+
+      function animateClouds(cloudsList) {
+        cloudsList.forEach((cloud) => {
+          cloud.position.x += 1;
+          cloud.position.z -= 1;
+          if (cloud.position.x > SCALE / 2) {
+            cloud.position.x = -SCALE / 2;
+          }
+          if (cloud.position.z < -SCALE / 2) {
+            cloud.position.z = SCALE / 2;
+          }
+        });
+      }
+
+      function animateFlash() {
+        if (Math.random() > 0.5) {
+          if (Math.random() > 0.5 || flash.power > 500) {
+            if (flash.power < 100) flash.position.set(Math.random() * SCALE - SCALE / 2, 0, Math.random() * SCALE - SCALE / 2);
+            flash.power = 50 + Math.random() * 1000;
+          }
+        }
+      }
+
+      // function animateRain(rainGeo){
+      // 	rainGeo.vertices.forEach(p => {
+      // 		p.velocity -= 0.1 + Math.random() * 0.1;
+      // 		p.y += p.velocity;
+      // 		if (p.y < -10) {
+      // 			p.y = 2000 + Math.random() *  1500 - 500;
+      // 			p.velocity = 0;
+      // 		}
+      // 	});
+      // 	rainGeo.verticesNeedUpdate = true;
+      // 	rain.rotation.y +=0.002;
+      // }
+
+      function cameraPositionLimit() {
+        if (camera.position.x > SCALE / 2) {
+          camera.position.x = SCALE / 2;
+        }
+
+        if (camera.position.x < -SCALE / 2) {
+          camera.position.x = -SCALE / 2;
+        }
+
+        if (camera.position.z > SCALE / 2) {
+          camera.position.z = SCALE / 2;
+        }
+
+        if (camera.position.z < -SCALE / 2) {
+          camera.position.z = -SCALE / 2;
+        }
+
+        if (camera.position.y < 0) {
+          camera.position.z = 0;
+        }
+      }
+
+      init();
+      animate();
+
+      function init() {
+        container = document.getElementById('container');
+
+        // renderer
+
+        renderer = new THREE.WebGLRenderer();
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        container.appendChild(renderer.domElement);
+
+        // Scene and camer
+
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x11111f, 0.0004);
+        renderer.setClearColor(scene.fog.color);
+        camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
+        camera.position.set(0, 100, 0);
+
+        // Moon light
+        ambient = new THREE.AmbientLight(0x555555);
+        scene.add(ambient);
+
+        directionalLight = new THREE.DirectionalLight(0xffeedd);
+        directionalLight.position.set(0, 0, 1);
+        scene.add(directionalLight);
+
+        // Clouds
+        const cloudLoader = new GLTFLoader();
+
+        cloudLoader.load('./models/scene.gltf', function (cloud) {
+          for (let p = 0; p < cloudCount; p++) {
+            let currCloud = cloud.scene.clone().children[0];
+
+            currCloud.position.x = Math.random() * SCALE - SCALE / 2;
+            currCloud.position.y = 2000 + Math.random() * 1500 - 500;
+            currCloud.position.z = Math.random() * SCALE - SCALE / 2;
+
+            const scaleMultiplier = Math.random();
+            currCloud.scale.setX(2 + 2 * scaleMultiplier);
+            currCloud.scale.setY(2 + 2 * scaleMultiplier);
+            currCloud.scale.setZ(0.5);
+
+            scene.add(currCloud);
+
+            cloudsList.push(currCloud);
+          }
+        });
+
+        // Flash
+
+        flash = new THREE.PointLight(0x062d89, 30, SCALE / 2, 0.1);
+        flash.position.set(0, SCALE / 2, 0);
+        scene.add(flash);
+
+        // Rain
+
+        // rainGeo = new THREE.BufferGeometry();
+        // let rainDropList = []
+        // for(let i=0;i<rainCount;i++) {
+        // 	let rainDrop = new THREE.Vector3(
+        // 		Math.random() * SCALE - SCALE/2,
+        // 		2000 + Math.random() *  1500 - 500,
+        // 		Math.random() * SCALE - SCALE/2
+        // 	);
+        // 	rainDrop.velocity = 0;
+        // 	rainDropList.push(rainDrop);
+        // }
+
+        // rainDropList = new Float32Array(rainDropList)
+        // rainGeo.setAttribute('position', new THREE.BufferAttribute(rainDropList, 3));
+        // rain = new THREE.Points(rainGeo,rainMaterial);
+        // scene.add(rain);
+
+        // Water
+
+        const waterGeometry = new THREE.PlaneGeometry(SCALE, SCALE);
+
+        water = new Water(waterGeometry, {
+          textureWidth: 512,
+          textureHeight: 512,
+          waterNormals: new THREE.TextureLoader().load('textures/waternormals.jpg', function (texture) {
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+          }),
+          sunDirection: new THREE.Vector3(),
+          sunColor: 0xffffff,
+          waterColor: 0x001e0f,
+          distortionScale: 3.7,
+          fog: scene.fog !== undefined,
+        });
+
+        water.rotation.x = -Math.PI / 2;
+        scene.add(water);
+
+        // Camera control
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.maxPolarAngle = (1.5 * Math.PI) / 2;
+        controls.target.set(10, 100, 0);
+        controls.minDistance = 40.0;
+        controls.maxDistance = 100;
+        controls.update();
+
+        // Stats in top left
+
+        stats = new Stats();
+        container.appendChild(stats.dom);
+
+        // GUI in top right
+
+        const gui = new GUI();
+
+        const waterUniforms = water.material.uniforms;
+
+        const folderWater = gui.addFolder('Water');
+        folderWater.add(waterUniforms.distortionScale, 'value', 0, 8, 0.1).name('distortionScale');
+        folderWater.add(waterUniforms.size, 'value', 0.1, 10, 0.1).name('size');
+        folderWater.open();
+
+        //event listeners
+
+        window.addEventListener('resize', onWindowResize);
+      }
+
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function animate() {
+        animateClouds(cloudsList);
+        animateFlash();
+        // animateRain(rainGeo)
+        requestAnimationFrame(animate);
+        render();
+        stats.update();
+      }
+
+      function render() {
+        water.material.uniforms['time'].value += 1.0 / 60.0;
+        cameraPositionLimit();
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>

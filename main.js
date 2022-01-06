@@ -10,6 +10,7 @@ import { LightningStorm } from 'https://cdn.skypack.dev/three/examples/jsm/objec
 import { EffectComposer } from 'https://cdn.skypack.dev/three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'https://cdn.skypack.dev/three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'https://cdn.skypack.dev/three/examples/jsm/postprocessing/OutlinePass.js';
+import { VRButton } from 'https://cdn.skypack.dev/three/examples/jsm/webxr/VRButton.js';
 
 // import * as THREE from './node_modules/three';
 // import Stats from './node_modules/three/examples/jsm/libs/stats.module.js';
@@ -24,6 +25,12 @@ let container, stats;
 let camera, scene, renderer, composer;
 let controls, water, sun, mesh;
 let ambient, directionalLight;
+
+var controller;
+//var dolly;// The dolly contains the camera and the controller.
+// Move the dolly to move the camera and controller.
+var main_scene;
+
 let cloud,
   cloudsList = [];
 let flash;
@@ -131,6 +138,9 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.xr.enabled = true;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   container.appendChild(renderer.domElement);
   composer = new EffectComposer(renderer);
@@ -141,6 +151,15 @@ function init() {
 
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
   camera.position.set(30, 30, 100);
+
+  // Dolly
+  // dolly = new THREE.Group();
+  // dolly.position.set(0, 0, 1.8);
+  // dolly.rotation.x += 3.14 / 2;
+  // dolly.add(camera);
+  // scene.add(dolly);
+
+  loadGLTF();
 
   // Moon light
   ambient = new THREE.AmbientLight(0x555555);
@@ -235,7 +254,15 @@ function init() {
 
   //   // scene.environment = pmremGenerator.fromScene(sky).texture;
   // }
-  function updateSound() {}
+  function updateSound() {
+    //Thunder
+    // var audio = new Audio();
+    // audio.src = 'soundeffects/thunder.mp3';
+    // audio.volume = 1;
+    // audio.loop = true;
+    // audio.play();
+    // document.getElementById('soundeffects/thunder.mp3').play();
+  }
   function updateVR() {}
 
   // updateSun();
@@ -268,8 +295,8 @@ function init() {
   const gui = new GUI();
 
   const folderSettings = gui.addFolder('Settings');
-  folderSettings.add(parameters, 'Sound', 0, 1, 1).onChange(updateSound);
-  folderSettings.add(parameters, 'VR', 0, 1, 1).onChange(updateVR);
+  folderSettings.add(parameters, 'Sound').onChange(updateSound);
+  folderSettings.add(parameters, 'VR').onChange(updateVR);
   folderSettings.open();
 
   // const folderSky = gui.addFolder('Sky');
@@ -284,9 +311,30 @@ function init() {
 
   window.addEventListener('resize', onWindowResize);
 
+  function onSelectStart() {
+    // Add code for when user presses their controller
+  }
+
+  function onSelectEnd() {
+    // Add code for when user releases the button on their controller
+  }
+
+  controller = renderer.xr.getController(0);
+  controller.addEventListener('selectstart', onSelectStart);
+  controller.addEventListener('selectend', onSelectEnd);
+  controller.addEventListener('connected', function (event) {});
+
+  controller.addEventListener('disconnected', function () {});
+  //controller.position.y += 5;
+  camera.add(controller);
+
+  window.addEventListener('resize', onWindowResize, false);
+
+  document.body.appendChild(VRButton.createButton(renderer));
+
   // ------------ Music Init --------- //
 
-  window.addEventListener('load', () => {
+  window.addEventListener('input', () => {
     // noinspection JSUnresolvedVariable
     let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     let xhr = new XMLHttpRequest();
@@ -421,6 +469,22 @@ function render() {
   scene.userData.render(currentTime);
 }
 
+function loadGLTF() {
+  let loader = new GLTFLoader();
+
+  loader.load('assets/island.gltf', (gltf) => {
+    main_scene = gltf.scene;
+    main_scene.scale.set(7, 7, 7);
+    scene.add(main_scene);
+    main_scene.position.x = -500;
+    main_scene.position.y = 0;
+    main_scene.position.z = 100;
+    // main_scene.position.z = -10;
+    main_scene.rotation.z = -1.2;
+    main_scene.rotation.x = -1.55;
+  });
+}
+
 function createStormScene() {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x050505);
@@ -536,14 +600,14 @@ function createStormScene() {
 
     lightningMaterial: scene.userData.lightningMaterial,
 
-    onLightningDown: function (lightning) {
-      // Add black star mark at ray strike
-      const star1 = starMesh.clone();
-      star1.position.copy(lightning.rayParameters.destOffset);
-      star1.position.y = 0.05;
-      star1.rotation.y = 2 * Math.PI * Math.random();
-      scene.add(star1);
-    },
+    // onLightningDown: function (lightning) {
+    //   // Add black star mark at ray strike
+    //   const star1 = starMesh.clone();
+    //   star1.position.copy(lightning.rayParameters.destOffset);
+    //   star1.position.y = 0.05;
+    //   star1.rotation.y = 2 * Math.PI * Math.random();
+    //   scene.add(star1);
+    // },
   });
 
   scene.add(storm);
