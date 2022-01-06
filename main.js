@@ -12,23 +12,26 @@ import { RenderPass } from 'https://cdn.skypack.dev/three/examples/jsm/postproce
 import { OutlinePass } from 'https://cdn.skypack.dev/three/examples/jsm/postprocessing/OutlinePass.js';
 import { VRButton } from 'https://cdn.skypack.dev/three/examples/jsm/webxr/VRButton.js';
 
-// import * as THREE from './node_modules/three';
-// import Stats from './node_modules/three/examples/jsm/libs/stats.module.js';
-// import { GUI } from './node_modules/three/examples/jsm/libs/lil-gui.module.min.js';
-// import { OrbitControls } from './node_modules/three/examples/jsm/controls/OrbitControls.js';
-// import { Water } from './node_modules/three/examples/jsm/objects/Water.js';
-// import { Sky } from './node_modules/three/examples/jsm/objects/Sky.js';
-// import { GUI } from './node_modules/three/examples/jsm/libs/lil-gui.module.min.js';
-// import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+// import * as THREE from 'three';
+// import Stats from 'three/examples/jsm/libs/stats.module.js';
+// import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+// import { Water } from 'three/examples/jsm/objects/Water.js';
+// import { Sky } from 'three/examples/jsm/objects/Sky.js';
+// import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
+// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+// import { LightningStrike } from 'three/examples/jsm/geometries/LightningStrike.js';
+// import { LightningStorm } from 'three/examples/jsm/objects/LightningStorm.js';
+// import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+// import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+// import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+// import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
 
 let container, stats;
 let camera, scene, renderer, composer;
-let controls, water, sun, mesh;
+let controls, water, mesh;
 let ambient, directionalLight;
 
 var controller;
-//var dolly;// The dolly contains the camera and the controller.
-// Move the dolly to move the camera and controller.
 var main_scene;
 
 let cloud,
@@ -131,8 +134,7 @@ animate();
 function init() {
   container = document.getElementById('container');
 
-  //
-
+  //Renderer
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -144,34 +146,25 @@ function init() {
 
   container.appendChild(renderer.domElement);
   composer = new EffectComposer(renderer);
-  //
 
+  //Scene
   createScene();
-  // scene = new THREE.Scene();
 
+  //Camera
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
   camera.position.set(30, 30, 100);
-
-  // Dolly
-  // dolly = new THREE.Group();
-  // dolly.position.set(0, 0, 1.8);
-  // dolly.rotation.x += 3.14 / 2;
-  // dolly.add(camera);
-  // scene.add(dolly);
 
   loadGLTF();
 
   // Moon light
   ambient = new THREE.AmbientLight(0x555555);
   scene.add(ambient);
-
   directionalLight = new THREE.DirectionalLight(0xffeedd);
   directionalLight.position.set(0, 0, 1);
   scene.add(directionalLight);
 
   // Clouds
   const cloudLoader = new GLTFLoader();
-
   cloudLoader.load('./models/scene.gltf', function (cloud) {
     for (let p = 0; p < cloudCount; p++) {
       let currCloud = cloud.scene.clone().children[0];
@@ -192,16 +185,11 @@ function init() {
   });
 
   // Flash
-
   flash = new THREE.PointLight(0x062d89, 30, SCALE / 2, 0.1);
   flash.position.set(0, SCALE / 2, 0);
   scene.add(flash);
 
-  //
-  // sun = new THREE.Vector3();
-
   // Water
-
   const waterGeometry = new THREE.PlaneGeometry(SCALE, SCALE);
 
   water = new Water(waterGeometry, {
@@ -218,21 +206,7 @@ function init() {
   });
 
   water.rotation.x = -Math.PI / 2;
-
   scene.add(water);
-
-  // Skybox
-
-  // const sky = new Sky();
-  // sky.scale.setScalar(10000);
-  // scene.add(sky);
-
-  // const skyUniforms = sky.material.uniforms;
-
-  // skyUniforms['turbidity'].value = 10;
-  // skyUniforms['rayleigh'].value = 2;
-  // skyUniforms['mieCoefficient'].value = 0.005;
-  // skyUniforms['mieDirectionalG'].value = 0.8;
 
   const parameters = {
     Sound: true,
@@ -243,40 +217,14 @@ function init() {
 
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
 
-  // function updateSun() {
-  //   const phi = THREE.MathUtils.degToRad(90 - parameters.elevation);
-  //   const theta = THREE.MathUtils.degToRad(parameters.azimuth);
-
-  //   sun.setFromSphericalCoords(1, phi, theta);
-
-  //   // sky.material.uniforms['sunPosition'].value.copy(sun);
-  //   water.material.uniforms['sunDirection'].value.copy(sun).normalize();
-
-  //   // scene.environment = pmremGenerator.fromScene(sky).texture;
-  // }
-  function updateSound() {
-    //Thunder
-    // var audio = new Audio();
-    // audio.src = 'soundeffects/thunder.mp3';
-    // audio.volume = 1;
-    // audio.loop = true;
-    // audio.play();
-    // document.getElementById('soundeffects/thunder.mp3').play();
-  }
-  function updateVR() {}
-
-  // updateSun();
-
-  //
+  function updateSound() {}
 
   const geometry = new THREE.BoxGeometry(0, 0, 0);
   const material = new THREE.MeshStandardMaterial({ roughness: 0 });
-
   mesh = new THREE.Mesh(geometry, material);
   scene.add(mesh);
 
-  //
-
+  //Controls
   controls = new OrbitControls(camera, renderer.domElement);
   controls.maxPolarAngle = (1.5 * Math.PI) / 2;
   controls.target.set(0, 10, 0);
@@ -286,23 +234,16 @@ function init() {
 
   //
   const waterUniforms = water.material.uniforms;
-
   stats = new Stats();
   container.appendChild(stats.dom);
 
   // GUI
-
   const gui = new GUI();
 
   const folderSettings = gui.addFolder('Settings');
   folderSettings.add(parameters, 'Sound').onChange(updateSound);
   folderSettings.add(parameters, 'VR').onChange(updateVR);
   folderSettings.open();
-
-  // const folderSky = gui.addFolder('Sky');
-  // folderSky.add(parameters, 'elevation', 0, 90, 0.1).onChange(updateSun);
-  // folderSky.add(parameters, 'azimuth', -180, 180, 0.1).onChange(updateSun);
-  // folderSky.open();
 
   const folderWater = gui.addFolder('Water');
   folderWater.add(waterUniforms.distortionScale, 'value', 0, 8, 0.1).name('distortionScale');
@@ -479,7 +420,6 @@ function loadGLTF() {
     main_scene.position.x = -500;
     main_scene.position.y = 0;
     main_scene.position.z = 100;
-    // main_scene.position.z = -10;
     main_scene.rotation.z = -1.2;
     main_scene.rotation.x = -1.55;
   });
@@ -491,7 +431,6 @@ function createStormScene() {
 
   scene.userData.canGoBackwardsInTime = false;
 
-  // scene.userData.camera = new THREE.PerspectiveCamera(27, window.innerWidth / window.innerHeight, 20, 10000);
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
   camera.position.set(30, 30, 100);
   // Lights
@@ -509,12 +448,6 @@ function createStormScene() {
   // Ground
 
   const GROUND_SIZE = 1000;
-
-  // scene.userData.camera.position.set(0, 0.2, 1.6).multiplyScalar(GROUND_SIZE * 0.5);
-
-  //const ground = new THREE.Mesh( new THREE.PlaneGeometry( GROUND_SIZE, GROUND_SIZE ), new THREE.MeshLambertMaterial( { color: 0x072302 } ) );
-  //ground.rotation.x = - Math.PI * 0.5;
-  //scene.add( ground );
 
   // Storm
 
@@ -564,31 +497,6 @@ function createStormScene() {
     },
   };
 
-  // // Black star mark
-  // const starVertices = [];
-  // const prevPoint = new THREE.Vector3(0, 0, 1);
-  // const currPoint = new THREE.Vector3();
-  // for (let i = 1; i <= 16; i++) {
-  //   currPoint.set(Math.sin((2 * Math.PI * i) / 16), 0, Math.cos((2 * Math.PI * i) / 16));
-
-  //   if (i % 2 === 1) {
-  //     currPoint.multiplyScalar(0.3);
-  //   }
-
-  //   starVertices.push(0, 0, 0);
-  //   starVertices.push(prevPoint.x, prevPoint.y, prevPoint.z);
-  //   starVertices.push(currPoint.x, currPoint.y, currPoint.z);
-
-  //   prevPoint.copy(currPoint);
-  // }
-
-  // const starGeometry = new THREE.BufferGeometry();
-  // starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-  // const starMesh = new THREE.Mesh(starGeometry, new THREE.MeshBasicMaterial({ color: 0x020900 }));
-  // starMesh.scale.multiplyScalar(6);
-
-  //
-
   const storm = new LightningStorm({
     size: GROUND_SIZE,
     minHeight: 2000,
@@ -599,15 +507,6 @@ function createStormScene() {
     lightningParameters: scene.userData.rayParams,
 
     lightningMaterial: scene.userData.lightningMaterial,
-
-    // onLightningDown: function (lightning) {
-    //   // Add black star mark at ray strike
-    //   const star1 = starMesh.clone();
-    //   star1.position.copy(lightning.rayParameters.destOffset);
-    //   star1.position.y = 0.05;
-    //   star1.rotation.y = 2 * Math.PI * Math.random();
-    //   scene.add(star1);
-    // },
   });
 
   scene.add(storm);
@@ -616,9 +515,8 @@ function createStormScene() {
 
   composer.passes = [];
   composer.addPass(new RenderPass(scene, camera));
-  //	createOutline( scene, storm.lightningsMeshes, scene.userData.outlineColor );
 
-  // Controls
+  // Light Controls
 
   const Lightcontrols = new OrbitControls(camera, renderer.domElement);
   Lightcontrols.target.y = GROUND_SIZE * 0.05;
