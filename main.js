@@ -242,7 +242,6 @@ function init() {
 
   const folderSettings = gui.addFolder('Settings');
   folderSettings.add(parameters, 'Sound').onChange(updateSound);
-  folderSettings.add(parameters, 'VR').onChange(updateVR);
   folderSettings.open();
 
   const folderWater = gui.addFolder('Water');
