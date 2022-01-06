@@ -23,6 +23,11 @@ import { OutlinePass } from 'https://cdn.skypack.dev/three/examples/jsm/postproc
 let container, stats;
 let camera, scene, renderer, composer;
 let controls, water, sun, mesh;
+let ambient, directionalLight;
+let cloud,
+  cloudsList = [];
+let flash;
+
 const loader = new GLTFLoader();
 
 let currentSceneIndex = 0;
@@ -36,79 +41,52 @@ const clock = new THREE.Clock();
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-// ------------ Music Init --------- //
+const cloudCount = 500;
+const SCALE = 10000;
 
-window.addEventListener('load', () => {
-  // noinspection JSUnresolvedVariable
-  let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  let xhr = new XMLHttpRequest();
-  xhr.open('GET', 'soundeffects/thunder.mp3');
-  xhr.responseType = 'arraybuffer';
-  xhr.addEventListener('load', () => {
-    let playsound = (audioBuffer) => {
-      let source = audioCtx.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioCtx.destination);
-      source.loop = false;
-      source.start();
-
-      setTimeout(function () {
-        playsound(audioBuffer);
-      }, 1000 + Math.random() * 2500);
-    };
-
-    audioCtx.decodeAudioData(xhr.response).then(playsound);
+function animateClouds(cloudsList) {
+  cloudsList.forEach((cloud) => {
+    cloud.position.x += 1;
+    cloud.position.z -= 1;
+    if (cloud.position.x > SCALE / 2) {
+      cloud.position.x = -SCALE / 2;
+    }
+    if (cloud.position.z < -SCALE / 2) {
+      cloud.position.z = SCALE / 2;
+    }
   });
-  xhr.send();
-});
+}
 
-window.addEventListener('load', () => {
-  // noinspection JSUnresolvedVariable
-  let audioCtx2 = new (window.AudioContext || window.webkitAudioContext)();
-  let xhr2 = new XMLHttpRequest();
-  xhr2.open('GET', 'soundeffects/waves.mp3');
-  xhr2.responseType = 'arraybuffer';
-  xhr2.addEventListener('load', () => {
-    let playsound2 = (audioBuffer) => {
-      let source2 = audioCtx2.createBufferSource();
-      source2.buffer = audioBuffer;
-      source2.connect(audioCtx2.destination);
-      source2.loop = false;
-      source2.start();
+function animateFlash() {
+  if (Math.random() > 0.5) {
+    if (Math.random() > 0.5 || flash.power > 500) {
+      if (flash.power < 100) flash.position.set(Math.random() * SCALE - SCALE / 2, 0, Math.random() * SCALE - SCALE / 2);
+      flash.power = 50 + Math.random() * 1000;
+    }
+  }
+}
 
-      setTimeout(function () {
-        playsound2(audioBuffer);
-      }, 1000 + Math.random() * 2500);
-    };
+function cameraPositionLimit() {
+  if (camera.position.x > SCALE / 2) {
+    camera.position.x = SCALE / 2;
+  }
 
-    audioCtx2.decodeAudioData(xhr2.response).then(playsound2);
-  });
-  xhr2.send();
-});
+  if (camera.position.x < -SCALE / 2) {
+    camera.position.x = -SCALE / 2;
+  }
 
-window.addEventListener('load', () => {
-  // noinspection JSUnresolvedVariable
-  let audioCtx3 = new (window.AudioContext || window.webkitAudioContext)();
-  let xhr3 = new XMLHttpRequest();
-  xhr3.open('GET', 'soundeffects/wind.wav');
-  xhr3.responseType = 'arraybuffer';
-  xhr3.addEventListener('load', () => {
-    let playsound3 = (audioBuffer) => {
-      let source3 = audioCtx3.createBufferSource();
-      source3.buffer = audioBuffer;
-      source3.connect(audioCtx3.destination);
-      source3.loop = false;
-      source3.start();
+  if (camera.position.z > SCALE / 2) {
+    camera.position.z = SCALE / 2;
+  }
 
-      setTimeout(function () {
-        playsound3(audioBuffer);
-      }, 1000 + Math.random() * 2500);
-    };
+  if (camera.position.z < -SCALE / 2) {
+    camera.position.z = -SCALE / 2;
+  }
 
-    audioCtx3.decodeAudioData(xhr3.response).then(playsound3);
-  });
-  xhr3.send();
-});
+  if (camera.position.y < 0) {
+    camera.position.z = 0;
+  }
+}
 
 class Boat {
   constructor() {
@@ -164,13 +142,48 @@ function init() {
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
   camera.position.set(30, 30, 100);
 
-  //
+  // Moon light
+  ambient = new THREE.AmbientLight(0x555555);
+  scene.add(ambient);
 
-  sun = new THREE.Vector3();
+  directionalLight = new THREE.DirectionalLight(0xffeedd);
+  directionalLight.position.set(0, 0, 1);
+  scene.add(directionalLight);
+
+  // Clouds
+  const cloudLoader = new GLTFLoader();
+
+  cloudLoader.load('./models/scene.gltf', function (cloud) {
+    for (let p = 0; p < cloudCount; p++) {
+      let currCloud = cloud.scene.clone().children[0];
+
+      currCloud.position.x = Math.random() * SCALE - SCALE / 2;
+      currCloud.position.y = 2000 + Math.random() * 1500 - 500;
+      currCloud.position.z = Math.random() * SCALE - SCALE / 2;
+
+      const scaleMultiplier = Math.random();
+      currCloud.scale.setX(2 + 2 * scaleMultiplier);
+      currCloud.scale.setY(2 + 2 * scaleMultiplier);
+      currCloud.scale.setZ(0.5);
+
+      scene.add(currCloud);
+
+      cloudsList.push(currCloud);
+    }
+  });
+
+  // Flash
+
+  flash = new THREE.PointLight(0x062d89, 30, SCALE / 2, 0.1);
+  flash.position.set(0, SCALE / 2, 0);
+  scene.add(flash);
+
+  //
+  // sun = new THREE.Vector3();
 
   // Water
 
-  const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
+  const waterGeometry = new THREE.PlaneGeometry(SCALE, SCALE);
 
   water = new Water(waterGeometry, {
     textureWidth: 512,
@@ -181,7 +194,7 @@ function init() {
     sunDirection: new THREE.Vector3(),
     sunColor: 0xffffff,
     waterColor: 0x004a7e,
-    distortionScale: 3.3,
+    distortionScale: 3.7,
     fog: scene.fog !== undefined,
   });
 
@@ -191,16 +204,16 @@ function init() {
 
   // Skybox
 
-  const sky = new Sky();
-  sky.scale.setScalar(10000);
-  scene.add(sky);
+  // const sky = new Sky();
+  // sky.scale.setScalar(10000);
+  // scene.add(sky);
 
-  const skyUniforms = sky.material.uniforms;
+  // const skyUniforms = sky.material.uniforms;
 
-  skyUniforms['turbidity'].value = 10;
-  skyUniforms['rayleigh'].value = 2;
-  skyUniforms['mieCoefficient'].value = 0.005;
-  skyUniforms['mieDirectionalG'].value = 0.8;
+  // skyUniforms['turbidity'].value = 10;
+  // skyUniforms['rayleigh'].value = 2;
+  // skyUniforms['mieCoefficient'].value = 0.005;
+  // skyUniforms['mieDirectionalG'].value = 0.8;
 
   const parameters = {
     Sound: true,
@@ -211,21 +224,21 @@ function init() {
 
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
 
-  function updateSun() {
-    const phi = THREE.MathUtils.degToRad(90 - parameters.elevation);
-    const theta = THREE.MathUtils.degToRad(parameters.azimuth);
+  // function updateSun() {
+  //   const phi = THREE.MathUtils.degToRad(90 - parameters.elevation);
+  //   const theta = THREE.MathUtils.degToRad(parameters.azimuth);
 
-    sun.setFromSphericalCoords(1, phi, theta);
+  //   sun.setFromSphericalCoords(1, phi, theta);
 
-    sky.material.uniforms['sunPosition'].value.copy(sun);
-    water.material.uniforms['sunDirection'].value.copy(sun).normalize();
+  //   // sky.material.uniforms['sunPosition'].value.copy(sun);
+  //   water.material.uniforms['sunDirection'].value.copy(sun).normalize();
 
-    scene.environment = pmremGenerator.fromScene(sky).texture;
-  }
+  //   // scene.environment = pmremGenerator.fromScene(sky).texture;
+  // }
   function updateSound() {}
   function updateVR() {}
 
-  updateSun();
+  // updateSun();
 
   //
 
@@ -238,7 +251,7 @@ function init() {
   //
 
   controls = new OrbitControls(camera, renderer.domElement);
-  controls.maxPolarAngle = Math.PI * 0.495;
+  controls.maxPolarAngle = (1.5 * Math.PI) / 2;
   controls.target.set(0, 10, 0);
   controls.minDistance = 40.0;
   controls.maxDistance = 200.0;
@@ -259,10 +272,10 @@ function init() {
   folderSettings.add(parameters, 'VR', 0, 1, 1).onChange(updateVR);
   folderSettings.open();
 
-  const folderSky = gui.addFolder('Sky');
-  folderSky.add(parameters, 'elevation', 0, 90, 0.1).onChange(updateSun);
-  folderSky.add(parameters, 'azimuth', -180, 180, 0.1).onChange(updateSun);
-  folderSky.open();
+  // const folderSky = gui.addFolder('Sky');
+  // folderSky.add(parameters, 'elevation', 0, 90, 0.1).onChange(updateSun);
+  // folderSky.add(parameters, 'azimuth', -180, 180, 0.1).onChange(updateSun);
+  // folderSky.open();
 
   const folderWater = gui.addFolder('Water');
   folderWater.add(waterUniforms.distortionScale, 'value', 0, 8, 0.1).name('distortionScale');
@@ -270,6 +283,80 @@ function init() {
   folderWater.open();
 
   window.addEventListener('resize', onWindowResize);
+
+  // ------------ Music Init --------- //
+
+  window.addEventListener('load', () => {
+    // noinspection JSUnresolvedVariable
+    let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let xhr = new XMLHttpRequest();
+    xhr.open('GET', 'soundeffects/thunder.mp3');
+    xhr.responseType = 'arraybuffer';
+    xhr.addEventListener('load', () => {
+      let playsound = (audioBuffer) => {
+        let source = audioCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioCtx.destination);
+        source.loop = false;
+        source.start();
+
+        setTimeout(function () {
+          playsound(audioBuffer);
+        }, 1000 + Math.random() * 2500);
+      };
+
+      audioCtx.decodeAudioData(xhr.response).then(playsound);
+    });
+    xhr.send();
+  });
+
+  window.addEventListener('load', () => {
+    // noinspection JSUnresolvedVariable
+    let audioCtx2 = new (window.AudioContext || window.webkitAudioContext)();
+    let xhr2 = new XMLHttpRequest();
+    xhr2.open('GET', 'soundeffects/waves.mp3');
+    xhr2.responseType = 'arraybuffer';
+    xhr2.addEventListener('load', () => {
+      let playsound2 = (audioBuffer) => {
+        let source2 = audioCtx2.createBufferSource();
+        source2.buffer = audioBuffer;
+        source2.connect(audioCtx2.destination);
+        source2.loop = false;
+        source2.start();
+
+        setTimeout(function () {
+          playsound2(audioBuffer);
+        }, 1000 + Math.random() * 2500);
+      };
+
+      audioCtx2.decodeAudioData(xhr2.response).then(playsound2);
+    });
+    xhr2.send();
+  });
+
+  window.addEventListener('load', () => {
+    // noinspection JSUnresolvedVariable
+    let audioCtx3 = new (window.AudioContext || window.webkitAudioContext)();
+    let xhr3 = new XMLHttpRequest();
+    xhr3.open('GET', 'soundeffects/wind.wav');
+    xhr3.responseType = 'arraybuffer';
+    xhr3.addEventListener('load', () => {
+      let playsound3 = (audioBuffer) => {
+        let source3 = audioCtx3.createBufferSource();
+        source3.buffer = audioBuffer;
+        source3.connect(audioCtx3.destination);
+        source3.loop = false;
+        source3.start();
+
+        setTimeout(function () {
+          playsound3(audioBuffer);
+        }, 1000 + Math.random() * 2500);
+      };
+
+      audioCtx3.decodeAudioData(xhr3.response).then(playsound3);
+    });
+    xhr3.send();
+  });
 
   // Boat moving
   window.addEventListener('keydown', function (e) {
@@ -293,7 +380,8 @@ function init() {
 
 function createScene() {
   scene = sceneCreators[currentSceneIndex]();
-
+  scene.fog = new THREE.FogExp2(0x11111f, 0.0004);
+  renderer.setClearColor(scene.fog.color);
   scene.userData.timeRate = 1;
 }
 
@@ -308,11 +396,14 @@ function onWindowResize() {
 function animate() {
   requestAnimationFrame(animate);
   render();
+  animateClouds(cloudsList);
+  animateFlash();
   boat.update();
   stats.update();
 }
 
 function render() {
+  cameraPositionLimit();
   const time = performance.now() * 0.001;
 
   mesh.position.y = Math.sin(time) * 20 + 5;
@@ -436,8 +527,8 @@ function createStormScene() {
 
   const storm = new LightningStorm({
     size: GROUND_SIZE,
-    minHeight: 90,
-    maxHeight: 200,
+    minHeight: 2000,
+    maxHeight: 3000,
     maxSlope: 0.6,
     maxLightnings: 8,
 
