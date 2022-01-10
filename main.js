@@ -34,6 +34,9 @@ let ambient, directionalLight;
 var controller;
 var main_scene;
 
+var waveAudioListener, thunderAudioListener, windAudioListener;
+var waveSound, thunderSound, windSound;
+
 let cloud,
   cloudsList = [];
 let flash;
@@ -43,6 +46,14 @@ const loader = new GLTFLoader();
 let currentSceneIndex = 0;
 
 let currentTime = 0;
+
+const parameters = {
+  Sound: false,
+  SoundMixer: 50,
+  VR: true,
+  elevation: 2,
+  azimuth: 180,
+};
 
 const sceneCreators = [createStormScene];
 
@@ -156,6 +167,43 @@ function init() {
 
   loadGLTF();
 
+  // Sounds
+
+  var waveAudioListener = new THREE.AudioListener();
+  var thunderAudioListener = new THREE.AudioListener();
+  var windAudioListener = new THREE.AudioListener();
+
+  camera.add(waveAudioListener);
+  camera.add(thunderAudioListener);
+  camera.add(windAudioListener);
+
+  // create a global audio source
+  var waveSound = new THREE.Audio(waveAudioListener);
+  var thunderSound = new THREE.Audio(thunderAudioListener);
+  var windSound = new THREE.Audio(windAudioListener);
+
+  var waveAudioLoader = new THREE.AudioLoader();
+  var thunderAudioLoader = new THREE.AudioLoader();
+  var windAudioLoader = new THREE.AudioLoader();
+
+  waveAudioLoader.load('soundeffects/waves.mp3', function (buffer) {
+    waveSound.setBuffer(buffer);
+    waveSound.setLoop(true);
+    waveSound.setVolume(parameters.SoundMixer / 100);
+  });
+
+  thunderAudioLoader.load('soundeffects/thunder.mp3', function (buffer) {
+    thunderSound.setBuffer(buffer);
+    thunderSound.setLoop(true);
+    thunderSound.setVolume(parameters.SoundMixer / 100);
+  });
+  windAudioLoader.load('soundeffects/wind.wav', function (buffer) {
+    windSound.setBuffer(buffer);
+    windSound.setLoop(true);
+    windSound.setVolume(parameters.SoundMixer / 100);
+  });
+  updateSoundMixer();
+
   // Moon light
   ambient = new THREE.AmbientLight(0x555555);
   scene.add(ambient);
@@ -208,16 +256,25 @@ function init() {
   water.rotation.x = -Math.PI / 2;
   scene.add(water);
 
-  const parameters = {
-    Sound: true,
-    VR: true,
-    elevation: 2,
-    azimuth: 180,
-  };
-
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
 
-  function updateSound() {}
+  function updateSound() {
+    if (parameters.Sound) {
+      waveSound.play();
+      thunderSound.play();
+      windSound.play();
+    } else {
+      waveSound.stop();
+      thunderSound.stop();
+      windSound.stop();
+    }
+  }
+
+  function updateSoundMixer() {
+    waveSound.setVolume(parameters.SoundMixer / 100);
+    thunderSound.setVolume(parameters.SoundMixer / 100);
+    windSound.setVolume(parameters.SoundMixer / 100);
+  }
 
   const geometry = new THREE.BoxGeometry(0, 0, 0);
   const material = new THREE.MeshStandardMaterial({ roughness: 0 });
@@ -242,6 +299,7 @@ function init() {
 
   const folderSettings = gui.addFolder('Settings');
   folderSettings.add(parameters, 'Sound').onChange(updateSound);
+  folderSettings.add(parameters, 'SoundMixer').min(1).max(100).step(1).onChange(updateSoundMixer);
   folderSettings.open();
 
   const folderWater = gui.addFolder('Water');
@@ -268,83 +326,10 @@ function init() {
   //controller.position.y += 5;
   camera.add(controller);
 
-  window.addEventListener('resize', onWindowResize, false);
-
   document.body.appendChild(VRButton.createButton(renderer));
 
-  // ------------ Music Init --------- //
-
-  window.addEventListener('input', () => {
-    // noinspection JSUnresolvedVariable
-    let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    let xhr = new XMLHttpRequest();
-    xhr.open('GET', 'soundeffects/thunder.mp3');
-    xhr.responseType = 'arraybuffer';
-    xhr.addEventListener('load', () => {
-      let playsound = (audioBuffer) => {
-        let source = audioCtx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioCtx.destination);
-        source.loop = false;
-        source.start();
-
-        setTimeout(function () {
-          playsound(audioBuffer);
-        }, 1000 + Math.random() * 2500);
-      };
-
-      audioCtx.decodeAudioData(xhr.response).then(playsound);
-    });
-    xhr.send();
-  });
-
-  window.addEventListener('load', () => {
-    // noinspection JSUnresolvedVariable
-    let audioCtx2 = new (window.AudioContext || window.webkitAudioContext)();
-    let xhr2 = new XMLHttpRequest();
-    xhr2.open('GET', 'soundeffects/waves.mp3');
-    xhr2.responseType = 'arraybuffer';
-    xhr2.addEventListener('load', () => {
-      let playsound2 = (audioBuffer) => {
-        let source2 = audioCtx2.createBufferSource();
-        source2.buffer = audioBuffer;
-        source2.connect(audioCtx2.destination);
-        source2.loop = false;
-        source2.start();
-
-        setTimeout(function () {
-          playsound2(audioBuffer);
-        }, 1000 + Math.random() * 2500);
-      };
-
-      audioCtx2.decodeAudioData(xhr2.response).then(playsound2);
-    });
-    xhr2.send();
-  });
-
-  window.addEventListener('load', () => {
-    // noinspection JSUnresolvedVariable
-    let audioCtx3 = new (window.AudioContext || window.webkitAudioContext)();
-    let xhr3 = new XMLHttpRequest();
-    xhr3.open('GET', 'soundeffects/wind.wav');
-    xhr3.responseType = 'arraybuffer';
-    xhr3.addEventListener('load', () => {
-      let playsound3 = (audioBuffer) => {
-        let source3 = audioCtx3.createBufferSource();
-        source3.buffer = audioBuffer;
-        source3.connect(audioCtx3.destination);
-        source3.loop = false;
-        source3.start();
-
-        setTimeout(function () {
-          playsound3(audioBuffer);
-        }, 1000 + Math.random() * 2500);
-      };
-
-      audioCtx3.decodeAudioData(xhr3.response).then(playsound3);
-    });
-    xhr3.send();
-  });
+  // Window Listeners
+  window.addEventListener('resize', onWindowResize, false);
 
   // Boat moving
   window.addEventListener('keydown', function (e) {
