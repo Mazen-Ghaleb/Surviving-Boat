@@ -32,7 +32,7 @@ let controls, water, mesh;
 let ambient, directionalLight;
 
 var controller;
-var main_scene;
+var Boat_scene, Island_scene;
 
 var waveAudioListener, thunderAudioListener, windAudioListener;
 var waveSound, thunderSound, windSound;
@@ -50,6 +50,7 @@ let currentTime = 0;
 const parameters = {
   Sound: false,
   SoundMixer: 50,
+  CameraLock: true,
   VR: true,
   elevation: 2,
   azimuth: 180,
@@ -88,36 +89,63 @@ function animateFlash() {
 }
 
 function cameraPositionLimit() {
-  if (camera.position.x > SCALE / 2) {
-    camera.position.x = SCALE / 2;
+  if (parameters.CameraLock) {
+    camera.position.x = Boat_scene.position.x + 5.6;
+    camera.position.y = Boat_scene.position.y - 3;
+    camera.position.z = Boat_scene.position.z + 40;
+    camera.rotation.x = Boat_scene.rotation.x;
+    // camera.rotation.y = Math.round((Boat_scene.rotation.y - 1.55) * 100) / 100;
+    camera.rotation.z = Boat_scene.rotation.z;
+  } else {
+    if (camera.position.x > SCALE / 8) {
+      camera.position.x = SCALE / 8;
+    }
+
+    if (camera.position.x < -SCALE / 8) {
+      camera.position.x = SCALE / 8;
+    }
+
+    if (camera.position.z > SCALE / 8) {
+      camera.position.z = SCALE / 8;
+    }
+
+    if (camera.position.z < -SCALE / 8) {
+      camera.position.z = SCALE / 8;
+    }
+
+    if (camera.position.y > SCALE * 0.09) {
+      camera.position.y = SCALE * 0.09;
+    }
+  }
+}
+function BoatPositionLimit() {
+  if (Boat_scene.position.x > SCALE / 4) {
+    Boat_scene.position.x = SCALE / 4;
   }
 
-  if (camera.position.x < -SCALE / 2) {
-    camera.position.x = -SCALE / 2;
+  if (Boat_scene.position.x < -SCALE / 4) {
+    Boat_scene.position.x = SCALE / 4;
   }
 
-  if (camera.position.z > SCALE / 2) {
-    camera.position.z = SCALE / 2;
+  if (Boat_scene.position.z > SCALE / 4) {
+    Boat_scene.position.x = SCALE / 4;
   }
 
-  if (camera.position.z < -SCALE / 2) {
-    camera.position.z = -SCALE / 2;
-  }
-
-  if (camera.position.y < 0) {
-    camera.position.z = 0;
+  if (Boat_scene.position.z < -SCALE / 4) {
+    Boat_scene.position.z = SCALE / 4;
   }
 }
 
 class Boat {
   constructor() {
     loader.load('assets/boat/scene.gltf', (gltf) => {
+      Boat_scene = gltf.scene;
       scene.add(gltf.scene);
-      gltf.scene.scale.set(3, 3, 3);
-      gltf.scene.position.set(5, 13, 50);
-      gltf.scene.rotation.y = 1.5;
+      Boat_scene.scale.set(3, 3, 3);
+      Boat_scene.position.set(-7, 13, 70);
+      Boat_scene.rotation.y = 1.55;
 
-      this.boat = gltf.scene;
+      this.boat = Boat_scene;
       this.speed = {
         vel: 0,
         rot: 0,
@@ -163,7 +191,7 @@ function init() {
 
   //Camera
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
-  camera.position.set(30, 30, 100);
+  camera.position.set(5, 13, 110);
 
   loadGLTF();
 
@@ -283,10 +311,10 @@ function init() {
 
   //Controls
   controls = new OrbitControls(camera, renderer.domElement);
-  controls.maxPolarAngle = (1.5 * Math.PI) / 2;
+  controls.maxPolarAngle = Math.PI / 2;
   controls.target.set(0, 10, 0);
-  controls.minDistance = 40.0;
-  controls.maxDistance = 200.0;
+  controls.minDistance = 0;
+  controls.maxDistance = Infinity;
   controls.update();
 
   //
@@ -298,14 +326,9 @@ function init() {
   const gui = new GUI();
 
   const folderSettings = gui.addFolder('Settings');
-  folderSettings.add(parameters, 'Sound').onChange(updateSound);
-  folderSettings.add(parameters, 'SoundMixer').min(1).max(100).step(1).onChange(updateSoundMixer);
-  folderSettings.open();
-
-  const folderWater = gui.addFolder('Water');
-  folderWater.add(waterUniforms.distortionScale, 'value', 0, 8, 0.1).name('distortionScale');
-  folderWater.add(waterUniforms.size, 'value', 0.1, 10, 0.1).name('size');
-  folderWater.open();
+  folderSettings.add(parameters, 'Sound').listen().onChange(updateSound);
+  folderSettings.add(parameters, 'SoundMixer').name('Sound Mixer').min(1).max(100).step(1).listen().onChange(updateSoundMixer);
+  folderSettings.add(parameters, 'CameraLock').name('Camera Lock').listen();
 
   window.addEventListener('resize', onWindowResize);
 
@@ -345,6 +368,9 @@ function init() {
     if (e.key == 'ArrowLeft') {
       boat.speed.rot = 0.1;
     }
+    if (e.key == 'Z' || e.key == 'z') {
+      parameters.CameraLock = !parameters.CameraLock;
+    }
   });
   window.addEventListener('keyup', function (e) {
     boat.stop();
@@ -376,7 +402,10 @@ function animate() {
 }
 
 function render() {
+  BoatPositionLimit();
   cameraPositionLimit();
+  // console.log(camera.rotation.y - Boat_scene.rotation.y);
+
   const time = performance.now() * 0.001;
 
   mesh.position.y = Math.sin(time) * 20 + 5;
@@ -398,14 +427,14 @@ function loadGLTF() {
   let loader = new GLTFLoader();
 
   loader.load('assets/island.gltf', (gltf) => {
-    main_scene = gltf.scene;
-    main_scene.scale.set(7, 7, 7);
-    scene.add(main_scene);
-    main_scene.position.x = -500;
-    main_scene.position.y = 0;
-    main_scene.position.z = 100;
-    main_scene.rotation.z = -1.2;
-    main_scene.rotation.x = -1.55;
+    Island_scene = gltf.scene;
+    Island_scene.scale.set(7, 7, 7);
+    scene.add(Island_scene);
+    Island_scene.position.x = -500;
+    Island_scene.position.y = 0;
+    Island_scene.position.z = 100;
+    Island_scene.rotation.z = -1.2;
+    Island_scene.rotation.x = -1.55;
   });
 }
 
@@ -416,7 +445,7 @@ function createStormScene() {
   scene.userData.canGoBackwardsInTime = false;
 
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
-  camera.position.set(30, 30, 100);
+  camera.position.set(-1.4, 10, 95);
   // Lights
 
   scene.add(new THREE.AmbientLight(0x444444));
