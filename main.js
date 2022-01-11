@@ -90,27 +90,25 @@ function animateFlash() {
 
 function cameraPositionLimit() {
   if (parameters.CameraLock) {
+    // camera.rotation.y = Math.round((Boat_scene.rotation.y - 1.55) * 100) / 100;
     camera.position.x = Boat_scene.position.x + 5.6;
     camera.position.y = Boat_scene.position.y - 3;
     camera.position.z = Boat_scene.position.z + 40;
-    camera.rotation.x = Boat_scene.rotation.x;
-    // camera.rotation.y = Math.round((Boat_scene.rotation.y - 1.55) * 100) / 100;
-    camera.rotation.z = Boat_scene.rotation.z;
   } else {
-    if (camera.position.x > SCALE / 8) {
-      camera.position.x = SCALE / 8;
+    if (camera.position.x > SCALE / 4) {
+      camera.position.x = SCALE / 4;
     }
 
-    if (camera.position.x < -SCALE / 8) {
-      camera.position.x = SCALE / 8;
+    if (camera.position.x < -SCALE / 4) {
+      camera.position.x = SCALE / 4;
     }
 
-    if (camera.position.z > SCALE / 8) {
-      camera.position.z = SCALE / 8;
+    if (camera.position.z > SCALE / 4) {
+      camera.position.z = SCALE / 4;
     }
 
-    if (camera.position.z < -SCALE / 8) {
-      camera.position.z = SCALE / 8;
+    if (camera.position.z < -SCALE / 4) {
+      camera.position.z = SCALE / 4;
     }
 
     if (camera.position.y > SCALE * 0.09) {
@@ -370,6 +368,10 @@ function init() {
     }
     if (e.key == 'Z' || e.key == 'z') {
       parameters.CameraLock = !parameters.CameraLock;
+    }
+    if (e.key == 'M' || e.key == 'm') {
+      parameters.Sound = !parameters.Sound;
+      updateSound();
     }
   });
   window.addEventListener('keyup', function (e) {
