@@ -90,10 +90,18 @@ function animateFlash() {
 
 function cameraPositionLimit() {
   if (parameters.CameraLock) {
-    // camera.rotation.y = Math.round((Boat_scene.rotation.y - 1.55) * 100) / 100;
-    camera.position.x = Boat_scene.position.x + 5.6;
-    camera.position.y = Boat_scene.position.y - 3;
-    camera.position.z = Boat_scene.position.z + 40;
+    camera.position.x = Boat_scene.position.x;
+    camera.position.y = Boat_scene.position.y;
+    camera.position.z = Boat_scene.position.z;
+    camera.rotation.x = Boat_scene.rotation.x;
+    camera.rotation.y = Boat_scene.rotation.y - Math.PI / 2;
+    camera.rotation.z = Boat_scene.rotation.z;
+    camera.translateX(5.6);
+    camera.translateY(-3);
+    camera.translateZ(40);
+    // camera.position.x = Boat_scene.position.x + 5.6;
+    // camera.position.y = Boat_scene.position.y - 3;
+    // camera.position.z = Boat_scene.position.z + 40;
   } else {
     if (camera.position.x > SCALE / 4) {
       camera.position.x = SCALE / 4;
@@ -126,7 +134,7 @@ function BoatPositionLimit() {
   }
 
   if (Boat_scene.position.z > SCALE / 4) {
-    Boat_scene.position.x = SCALE / 4;
+    Boat_scene.position.z = SCALE / 4;
   }
 
   if (Boat_scene.position.z < -SCALE / 4) {
@@ -141,7 +149,7 @@ class Boat {
       scene.add(gltf.scene);
       Boat_scene.scale.set(3, 3, 3);
       Boat_scene.position.set(-7, 13, 70);
-      Boat_scene.rotation.y = 1.55;
+      Boat_scene.rotation.y = 1.5;
 
       this.boat = Boat_scene;
       this.speed = {
