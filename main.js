@@ -51,7 +51,6 @@ const parameters = {
   Sound: false,
   SoundMixer: 50,
   CameraLock: true,
-  VR: true,
   elevation: 2,
   azimuth: 180,
 };
@@ -89,6 +88,8 @@ function animateFlash() {
 }
 
 function cameraPositionLimit() {
+  isCameraColliding(Island_scene);
+
   if (parameters.CameraLock) {
     camera.position.x = Boat_scene.position.x;
     camera.position.y = Boat_scene.position.y;
@@ -181,7 +182,7 @@ function init() {
   container = document.getElementById('container');
 
   //Renderer
-  renderer = new THREE.WebGLRenderer();
+  renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputEncoding = THREE.sRGBEncoding;
@@ -391,15 +392,26 @@ function isColliding(obj1, obj2) {
   }
 }
 
-function checkCollisions() {
-  if (boat.boat) {
-    if (Island_scene) {
-      if (isColliding(boat.boat, Island_scene)) {
-        console.log('Colliding');
+function isCameraColliding(obj2) {
+  if (camera) {
+    if (obj2) {
+      if (Math.abs(camera.position.x - obj2.position.x) < 300 && Math.abs(camera.position.z - obj2.position.z) < 300) {
+        camera.position.x = camera.position.x > 0 ? camera.position.x++ : camera.position.x--;
+        camera.position.z = camera.position.z > 0 ? camera.position.z++ : camera.position.z--;
       }
     }
   }
 }
+
+// function checkCollisions() {
+//   if (boat.boat) {
+//     if (Island_scene) {
+//       if (isColliding(boat.boat, Island_scene)) {
+//         console.log('Colliding');
+//       }
+//     }
+//   }
+// }
 
 function createScene() {
   scene = sceneCreators[currentSceneIndex]();
@@ -417,17 +429,17 @@ function onWindowResize() {
 }
 
 function animate() {
-  requestAnimationFrame(animate);
-  render();
+  renderer.setAnimationLoop(render);
+  // requestAnimationFrame(animate);
+  // render();
+}
+
+function render() {
   animateClouds(cloudsList);
   animateFlash();
   boat.update();
   stats.update();
-}
-
-function render() {
   if (boat.boat && Island_scene) {
-    checkCollisions();
     BoatPositionLimit();
     cameraPositionLimit();
   }
