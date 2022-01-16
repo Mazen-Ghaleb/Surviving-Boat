@@ -28,7 +28,7 @@ import { VRButton } from 'https://cdn.skypack.dev/three/examples/jsm/webxr/VRBut
 
 let container, stats;
 let camera, scene, renderer, composer;
-let controls, water, mesh;
+let controls, water, mesh, mesh2;
 let ambient, directionalLight;
 
 var controller;
@@ -99,9 +99,6 @@ function cameraPositionLimit() {
     camera.translateX(5.6);
     camera.translateY(-3);
     camera.translateZ(40);
-    // camera.position.x = Boat_scene.position.x + 5.6;
-    // camera.position.y = Boat_scene.position.y - 3;
-    // camera.position.z = Boat_scene.position.z + 40;
   } else {
     if (camera.position.x > SCALE / 4) {
       camera.position.x = SCALE / 4;
@@ -168,6 +165,10 @@ class Boat {
     if (this.boat) {
       this.boat.rotation.y += this.speed.rot;
       this.boat.translateX(this.speed.vel);
+
+      if (isColliding(boat.boat, Island_scene)) {
+        this.boat.translateX(-this.speed.vel);
+      }
     }
   }
 }
@@ -199,7 +200,7 @@ function init() {
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
   camera.position.set(5, 13, 110);
 
-  loadGLTF();
+  loadIsland();
 
   // Sounds
 
@@ -310,11 +311,6 @@ function init() {
     windSound.setVolume(parameters.SoundMixer / 100);
   }
 
-  const geometry = new THREE.BoxGeometry(0, 0, 0);
-  const material = new THREE.MeshStandardMaterial({ roughness: 0 });
-  mesh = new THREE.Mesh(geometry, material);
-  scene.add(mesh);
-
   //Controls
   controls = new OrbitControls(camera, renderer.domElement);
   controls.maxPolarAngle = Math.PI / 2;
@@ -387,6 +383,24 @@ function init() {
   });
 }
 
+function isColliding(obj1, obj2) {
+  if (obj1) {
+    if (obj2) {
+      return Math.abs(obj1.position.x - obj2.position.x) < 300 && Math.abs(obj1.position.x - obj2.position.x) < 300;
+    }
+  }
+}
+
+function checkCollisions() {
+  if (boat.boat) {
+    if (Island_scene) {
+      if (isColliding(boat.boat, Island_scene)) {
+        console.log('Colliding');
+      }
+    }
+  }
+}
+
 function createScene() {
   scene = sceneCreators[currentSceneIndex]();
   scene.fog = new THREE.FogExp2(0x11111f, 0.0004);
@@ -412,15 +426,13 @@ function animate() {
 }
 
 function render() {
-  BoatPositionLimit();
-  cameraPositionLimit();
-  // console.log(camera.rotation.y - Boat_scene.rotation.y);
+  if (boat.boat && Island_scene) {
+    checkCollisions();
+    BoatPositionLimit();
+    cameraPositionLimit();
+  }
 
   const time = performance.now() * 0.001;
-
-  mesh.position.y = Math.sin(time) * 20 + 5;
-  mesh.rotation.x = time * 0.5;
-  mesh.rotation.z = time * 0.51;
 
   water.material.uniforms['time'].value += 1.0 / 60.0;
 
@@ -433,7 +445,7 @@ function render() {
   scene.userData.render(currentTime);
 }
 
-function loadGLTF() {
+function loadIsland() {
   let loader = new GLTFLoader();
 
   loader.load('assets/island.gltf', (gltf) => {
