@@ -1,34 +1,20 @@
-import * as THREE from 'https://cdn.skypack.dev/three';
-import Stats from 'https://cdn.skypack.dev/three/examples/jsm/libs/stats.module.js';
-import { OrbitControls } from 'https://cdn.skypack.dev/three/examples/jsm/controls/OrbitControls.js';
-import { Water } from 'https://cdn.skypack.dev/three/examples/jsm/objects/Water.js';
-import { Sky } from 'https://cdn.skypack.dev/three/examples/jsm/objects/Sky.js';
-import { GUI } from 'https://cdn.skypack.dev/three/examples/jsm/libs/lil-gui.module.min.js';
-import { GLTFLoader } from 'https://cdn.skypack.dev/three/examples/jsm/loaders/GLTFLoader.js';
-import { LightningStrike } from 'https://cdn.skypack.dev/three/examples/jsm/geometries/LightningStrike.js';
-import { LightningStorm } from 'https://cdn.skypack.dev/three/examples/jsm/objects/LightningStorm.js';
-import { EffectComposer } from 'https://cdn.skypack.dev/three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'https://cdn.skypack.dev/three/examples/jsm/postprocessing/RenderPass.js';
-import { OutlinePass } from 'https://cdn.skypack.dev/three/examples/jsm/postprocessing/OutlinePass.js';
-import { VRButton } from 'https://cdn.skypack.dev/three/examples/jsm/webxr/VRButton.js';
-
-// import * as THREE from 'three';
-// import Stats from 'three/examples/jsm/libs/stats.module.js';
-// import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-// import { Water } from 'three/examples/jsm/objects/Water.js';
-// import { Sky } from 'three/examples/jsm/objects/Sky.js';
-// import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
-// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-// import { LightningStrike } from 'three/examples/jsm/geometries/LightningStrike.js';
-// import { LightningStorm } from 'three/examples/jsm/objects/LightningStorm.js';
-// import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-// import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-// import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
-// import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
+import * as THREE from 'https://cdn.skypack.dev/three@0.136';
+import Stats from 'https://cdn.skypack.dev/three@0.136/examples/jsm/libs/stats.module.js';
+import { OrbitControls } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/controls/OrbitControls.js';
+import { Water } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/objects/Water.js';
+import { Sky } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/objects/Sky.js';
+import { GUI } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/libs/lil-gui.module.min.js';
+import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/loaders/GLTFLoader.js';
+import { LightningStrike } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/geometries/LightningStrike.js';
+import { LightningStorm } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/objects/LightningStorm.js';
+import { EffectComposer } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/postprocessing/RenderPass.js';
+import { OutlinePass } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/postprocessing/OutlinePass.js';
+import { VRButton } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/webxr/VRButton.js';
 
 let container, stats;
 let camera, scene, renderer, composer;
-let controls, water, mesh, mesh2;
+let controls, water, mesh;
 let ambient, directionalLight;
 
 var controller;
@@ -403,16 +389,6 @@ function isCameraColliding(obj2) {
   }
 }
 
-// function checkCollisions() {
-//   if (boat.boat) {
-//     if (Island_scene) {
-//       if (isColliding(boat.boat, Island_scene)) {
-//         console.log('Colliding');
-//       }
-//     }
-//   }
-// }
-
 function createScene() {
   scene = sceneCreators[currentSceneIndex]();
   scene.fog = new THREE.FogExp2(0x11111f, 0.0004);
@@ -430,8 +406,6 @@ function onWindowResize() {
 
 function animate() {
   renderer.setAnimationLoop(render);
-  // requestAnimationFrame(animate);
-  // render();
 }
 
 function render() {
