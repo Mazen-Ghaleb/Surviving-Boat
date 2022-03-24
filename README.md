@@ -2,7 +2,7 @@
 
 A boat trying to survive the foggy thunder storm by going to the island created by ThreeJS
 
-Check it out  [here!](https://mazen-ghaleb.github.io/Surviving-Boat---Graphics-Project/ "Project's Git Page Link")
+Check it out  [here!](https://mazen-ghaleb.github.io/Surviving-Boat/ "Project's Git Page Link")
 
 ![Project image](Demo.jpg)
 
